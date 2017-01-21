@@ -2,15 +2,19 @@ var express = require('express');
 var app = express();
 
 app.all('*', function (req, res) {
-    var port = req.get('host').split(':');
-    port = port[1];
+    var fullHost = req.get('host').split(':');
+    var host = fullHost[0];
+    var port = fullHost[1];
     var method = req.method;
     var path = req.originalUrl;
-    var headers = JSON.stringify(req.headers);
+    var arr = Object.keys(req.headers).map(function(k) { return req.headers[k].toString() });
+    console.log(arr);
+    var headers = JSON.stringify(arr);
     var jsonResponse = "{\"method\":" + "\"" + method + "\""
             + ",\"path\":" + "\"" + path + "\""
+            + ",\"host\":" + "\"" + host + "\""
             + ",\"port\":" + "\"" + port + "\""
-            + ",\"headers\":" + headers + "}";
+            + ",\"header\":" + headers + "}";
     res.send(jsonResponse);
 });
 
