@@ -51,11 +51,9 @@ app.use(function(req, res, next) {
 app.post('/login', function (req, res) {
     res.status(200);
     res.set('Content-type', 'application/json');
-    var jsonResponse = {
-        username: req.username,
-        password: req.password
-    }
-    res.send(JSON.stringify(jsonResponse));
+    var jsonResponse = "{\"username\":\"" + req.username + "\""
+        + ",\"password\":\"" + req.password + "\"}";
+    res.send(jsonResponse);
 });
 
 app.all('*', function (req, res) {
