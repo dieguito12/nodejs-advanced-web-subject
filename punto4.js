@@ -37,11 +37,7 @@ app.use(function(req, res, next) {
     var postValues = {};
     req.setEncoding('utf8');
     req.on('data', function(data) {
-        var postData = data.split("&");
-        for(var i = 0; i < postData.length; i++) {
-            var postEntry = postData[i].split('=');
-            req[postEntry[0]] = postEntry[1];
-        }
+        res.body = data;
     });
     req.on('end', function() {
         next();
@@ -50,10 +46,8 @@ app.use(function(req, res, next) {
 
 app.post('/login', function (req, res) {
     res.status(200);
-    res.set('Content-type', 'application/json');
-    var jsonResponse = "{\"username\":\"" + req.username + "\""
-        + ",\"password\":\"" + req.password + "\"}";
-    res.send(jsonResponse);
+    res.set('Content-Type', 'application/json');
+    res.send(res.body);
 });
 
 app.all('*', function (req, res) {
