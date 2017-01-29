@@ -4,28 +4,28 @@ var exphbs = require('express-handlebars');
 var multer = require('multer')
 var mkdirp = require('mkdirp');
 var uuid = require('uuid-v4');
-var sqlite3 = require('sqlite3').verbose();
-var db = new sqlite3.Database('./db/movies.sqlite3');
+var sqlite3 = require('sqlite3');
+var db = new sqlite3.Database('./db/movies.sqlite3', sqlite3.OPEN_READWRITE);
 var validUUID = true;
 
 var newFilePath = "";
 
 var storageImage = multer.diskStorage({
     destination: function(req, file, cb) {
-        var newDestination = 'img/';
+        var newDestination = '/img/';
         mkdirp(__dirname + newDestination, function(err) {
             cb(null, __dirname + newDestination);
         });
     },
     filename: function(req, file, cb) {
         var varFile = Date.now() + '_';
-        newFilePath = "img/" + varFile + file.originalname;
+        newFilePath = "/img/" + varFile + file.originalname;
         cb(null, varFile + file.originalname);
     }
 });
 
 var upload = multer({
-    dest: 'uploads/',
+    dest: '/uploads/',
     storage: storageImage,
 });
 
@@ -50,15 +50,48 @@ var handlebars = exphbs.create({
 
 app.post('/movies/create', upload.single('image'), function(req, res, next) {
     var newUUID = uuid();
-    while (!verifyUUID(newUUID)) {
-        newUUID = uuid();
+    var invalidJsonResponse = {
+        title: "Movie App",
+        layoutTitle: "Add a new movie",
+        idNameField: "name",
+        nameField: "Name",
+        idDescriptionField: "description",
+        descriptionField: "Description",
+        idImageField: "image",
+        imageField: "Image",
+        imageHelperDescription: "Choose a poster for the movie.",
+        buttonText: "Submit",
+        keywordsField: "Keywords",
+        idKeywordsField: "keywords"
+    }
+    if (req.body.name == "") {
+        invalidJsonResponse.invalidName = true;
+    }
+    if (req.body.description == "") {
+        invalidJsonResponse.invalidDescription = true;
+    }
+    if (req.body.keywords == "") {
+        invalidJsonResponse.invalidKeywords = true;
+    }
+    if (!req.file) {
+        invalidJsonResponse.invalidImage = true;
+    }
+    if (invalidJsonResponse.invalidName ||
+        invalidJsonResponse.invalidDescription ||
+        invalidJsonResponse.invalidKeywords ||
+        invalidJsonResponse.invalidImage
+    ) {
+        res.render('create', invalidJsonResponse);
+        return;
     }
     db.serialize(function() {
-        var statement = db.prepare("INSERT INTO mvies values (?,?,?,?,?)");
+        while (!verifyUUID(newUUID)) {
+            newUUID = uuid();
+        }
+        var statement = db.prepare("INSERT INTO movies values (?,?,?,?,?)");
         statement.run(newUUID, req.body.name, req.body.description, req.body.keywords, newFilePath);
-        statement.finalize;
+        statement.finalize();
     });
-    db.close();
 
     res.redirect('/movies');
 });
@@ -90,7 +123,7 @@ app.set('view engine', 'handlebars');
 app.get('/movies', function(req, res) {
     res.render('movies', {
         title: "Movie App",
-        layoutTitle: "My Movies"
+        layoutTitle: "My Movies",
     });
 });
 
@@ -98,6 +131,10 @@ app.get('/movies/create', function(req, res) {
     res.render('create', {
         title: "Movie App",
         layoutTitle: "Add a new movie",
+        invalidName: false,
+        invalidDescription: false,
+        invalidKeywords: false,
+        invalidImage: false,
         idNameField: "name",
         nameField: "Name",
         idDescriptionField: "description",
