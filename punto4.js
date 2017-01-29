@@ -21,7 +21,7 @@ var storageImage = multer.diskStorage({
     },
     filename: function(req, file, cb) {
         var varFile = Date.now() + '_';
-        newFilePath = "/public/img/" + varFile + file.originalname;
+        newFilePath = "/img/" + varFile + file.originalname;
         cb(null, varFile + file.originalname);
     }
 });
@@ -161,6 +161,8 @@ app.get('/movies/details/:id', function(req, res) {
             row.keywords = row.keywords.split(',');
             row.title = 'Movie App';
             row.layoutTitle = 'My Movies';
+            // row.description = row.description.replace(/(\r\n|\n|\r)/gm, '');
+            console.log(row);
             res.render('detail', row);
         });
     });
