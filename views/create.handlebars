@@ -1,0 +1,22 @@
+<div class="row">
+    <form action="/movies/create" method="POST" enctype="multipart/form-data">
+    <div class="form-group">
+        <label for="{{idNameField}}">{{nameField}}</label>
+        <input type="text" class="form-control" name="{{idNameField}}" id="{{idNameField}}">
+    </div>
+    <div class="form-group">
+        <label for="{{idDescriptionField}}">{{descriptionField}}</label>
+        <textarea class="form-control" rows="10" name="{{idDescriptionField}}" id="{{idDescriptionField}}"></textarea>
+    </div>
+    <div class="form-group">
+        <label for="{{idKeywordsField}}">{{keywordsField}}</label>
+        <input class="form-control" type="text" name="{{idKeywordsField}}" data-role="tagsinput" id="{{idKeywordsField}}">
+    </div>
+    <div class="form-group">
+        <label for="{{idImageField}}">{{imageField}}</label>
+        <input type="file" name="{{idImageField}}" id="{{idImageField}}">
+        <p class="help-block">{{imageHelperDescription}}</p>
+    </div>
+    <button type="submit" class="btn btn-default">{{buttonText}}</button>
+    </form>
+</div>
