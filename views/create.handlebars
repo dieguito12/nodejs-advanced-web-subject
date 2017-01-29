@@ -1,20 +1,40 @@
 <div class="row">
     <form action="/movies/create" method="POST" enctype="multipart/form-data">
+    {{#if invalidName}}
+    <div class="form-group has-error has-feedback">
+    {{else}}
     <div class="form-group">
+    {{/if}}
         <label for="{{idNameField}}">{{nameField}}</label>
         <input type="text" class="form-control" name="{{idNameField}}" id="{{idNameField}}">
+        <span class="glyphicon glyphicon-remove form-control-feedback" aria-hidden="true"></span>
     </div>
+    {{#if invalidDescription}}
+    <div class="form-group has-error has-feedback">
+    {{else}}
     <div class="form-group">
+    {{/if}}
         <label for="{{idDescriptionField}}">{{descriptionField}}</label>
         <textarea class="form-control" rows="10" name="{{idDescriptionField}}" id="{{idDescriptionField}}"></textarea>
+        <span class="glyphicon glyphicon-remove form-control-feedback" aria-hidden="true"></span>
     </div>
+    {{#if invalidKeywords}}
+    <div class="form-group has-error has-feedback">
+    {{else}}
     <div class="form-group">
+    {{/if}}
         <label for="{{idKeywordsField}}">{{keywordsField}}</label>
         <input class="form-control" type="text" name="{{idKeywordsField}}" data-role="tagsinput" id="{{idKeywordsField}}">
+        <span class="glyphicon glyphicon-remove form-control-feedback" aria-hidden="true"></span>
     </div>
+    {{#if invalidImage}}
+    <div class="form-group has-error has-feedback">
+    {{else}}
     <div class="form-group">
+    {{/if}}
         <label for="{{idImageField}}">{{imageField}}</label>
         <input type="file" name="{{idImageField}}" id="{{idImageField}}">
+        <span class="glyphicon glyphicon-remove form-control-feedback" aria-hidden="true"></span>
         <p class="help-block">{{imageHelperDescription}}</p>
     </div>
     <button type="submit" class="btn btn-default">{{buttonText}}</button>
