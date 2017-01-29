@@ -10,16 +10,18 @@ var validUUID = true;
 
 var newFilePath = "";
 
+app.use(express.static('public'));
+
 var storageImage = multer.diskStorage({
     destination: function(req, file, cb) {
-        var newDestination = '/img/';
+        var newDestination = '/public/img/';
         mkdirp(__dirname + newDestination, function(err) {
             cb(null, __dirname + newDestination);
         });
     },
     filename: function(req, file, cb) {
         var varFile = Date.now() + '_';
-        newFilePath = "/img/" + varFile + file.originalname;
+        newFilePath = "/public/img/" + varFile + file.originalname;
         cb(null, varFile + file.originalname);
     }
 });
@@ -66,12 +68,18 @@ app.post('/movies/create', upload.single('image'), function(req, res, next) {
     }
     if (req.body.name == "") {
         invalidJsonResponse.invalidName = true;
+    } else {
+        invalidJsonResponse.name = req.body.name;
     }
     if (req.body.description == "") {
         invalidJsonResponse.invalidDescription = true;
+    } else {
+        invalidJsonResponse.description = req.body.description;
     }
     if (req.body.keywords == "") {
         invalidJsonResponse.invalidKeywords = true;
+    } else {
+        invalidJsonResponse.keywords = req.body.keywords;
     }
     if (!req.file) {
         invalidJsonResponse.invalidImage = true;
@@ -121,10 +129,67 @@ app.engine('handlebars', handlebars.engine);
 app.set('view engine', 'handlebars');
 
 app.get('/movies', function(req, res) {
-    res.render('movies', {
-        title: "Movie App",
-        layoutTitle: "My Movies",
+    db.serialize(function() {
+        db.all("SELECT * FROM movies", function(err, row) {
+            row.forEach(function(element) {
+                element.keywords = element.keywords.split(',');
+            }, this);
+            res.render('movies', {
+                title: "Movie App",
+                layoutTitle: "My Movies",
+                movies: row
+            });
+        });
+    })
+});
+
+app.get('/movies/json', function(req, res) {
+    db.serialize(function() {
+        db.all("SELECT * FROM movies", function(err, row) {
+            row.forEach(function(element) {
+                element.keywords = element.keywords.split(',');
+            }, this);
+            res.send(row);
+        });
+    })
+});
+
+app.get('/movies/details/:id', function(req, res) {
+    db.serialize(function() {
+        db.get("SELECT * FROM movies where id = (?)", req.param("id"), function(err, row) {
+            row.imageCompressed = false;
+            row.keywords = row.keywords.split(',');
+            row.title = 'Movie App';
+            row.layoutTitle = 'My Movies';
+            res.render('detail', row);
+        });
     });
+});
+
+app.get('/movies/list', function(req, res) {
+    db.serialize(function() {
+        db.all("SELECT * FROM movies", function(err, row) {
+            row.forEach(function(element) {
+                element.keywords = element.keywords.split(',');
+            }, this);
+            res.render('movies', {
+                title: "Movie App",
+                layoutTitle: "My Movies",
+                movies: row
+            });
+        });
+    })
+});
+
+app.get('/movies/list/json', function(req, res) {
+    db.serialize(function() {
+        db.all("SELECT * FROM movies", function(err, row) {
+            row.forEach(function(element) {
+                element.keywords = element.keywords.split(',');
+            }, this);
+            res.send(row);
+        });
+    })
 });
 
 app.get('/movies/create', function(req, res) {
@@ -136,14 +201,10 @@ app.get('/movies/create', function(req, res) {
         invalidKeywords: false,
         invalidImage: false,
         idNameField: "name",
-        nameField: "Name",
         idDescriptionField: "description",
-        descriptionField: "Description",
         idImageField: "image",
         imageField: "Image",
-        imageHelperDescription: "Choose a poster for the movie.",
         buttonText: "Submit",
-        keywordsField: "Keywords",
         idKeywordsField: "keywords"
     });
 });
