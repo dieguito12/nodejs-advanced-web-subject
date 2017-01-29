@@ -5,8 +5,8 @@
     {{else}}
     <div class="form-group">
     {{/if}}
-        <label for="{{idNameField}}">{{nameField}}</label>
-        <input type="text" class="form-control" name="{{idNameField}}" id="{{idNameField}}">
+        <label for="{{idNameField}}">Name</label>
+        <input type="text" class="form-control" name="{{idNameField}}" id="{{idNameField}}" value="{{name}}">
         <span class="glyphicon glyphicon-remove form-control-feedback" aria-hidden="true"></span>
     </div>
     {{#if invalidDescription}}
@@ -14,8 +14,8 @@
     {{else}}
     <div class="form-group">
     {{/if}}
-        <label for="{{idDescriptionField}}">{{descriptionField}}</label>
-        <textarea class="form-control" rows="10" name="{{idDescriptionField}}" id="{{idDescriptionField}}"></textarea>
+        <label for="{{idDescriptionField}}">Description</label>
+        <textarea class="form-control" rows="10" name="{{idDescriptionField}}" id="{{idDescriptionField}}">{{description}}</textarea>
         <span class="glyphicon glyphicon-remove form-control-feedback" aria-hidden="true"></span>
     </div>
     {{#if invalidKeywords}}
@@ -23,8 +23,8 @@
     {{else}}
     <div class="form-group">
     {{/if}}
-        <label for="{{idKeywordsField}}">{{keywordsField}}</label>
-        <input class="form-control" type="text" name="{{idKeywordsField}}" data-role="tagsinput" id="{{idKeywordsField}}">
+        <label for="{{idKeywordsField}}">Keywords</label>
+        <input class="form-control" type="text" value="{{keywords}}" name="{{idKeywordsField}}" data-role="tagsinput" id="{{idKeywordsField}}">
         <span class="glyphicon glyphicon-remove form-control-feedback" aria-hidden="true"></span>
     </div>
     {{#if invalidImage}}
@@ -32,7 +32,7 @@
     {{else}}
     <div class="form-group">
     {{/if}}
-        <label for="{{idImageField}}">{{imageField}}</label>
+        <label for="{{idImageField}}">Image</label>
         <input type="file" name="{{idImageField}}" id="{{idImageField}}">
         <span class="glyphicon glyphicon-remove form-control-feedback" aria-hidden="true"></span>
         <p class="help-block">{{imageHelperDescription}}</p>
