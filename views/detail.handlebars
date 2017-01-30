@@ -1,10 +1,10 @@
 <div class="col-md-12">
     <div class="row">
-        <div class="col-md-3" style="text-align: center;">
+        <div class="col-md-3">
             {{#if imageCompressed}}
                 <img src="{{image}}">
             {{else}}
-                <img src="{{image}}" style="width: 70%; height: 70%; max-width: 300px; max-height: 400px">
+                <img src="{{image}}" class="uncompressedDetail">
             {{/if}}
         </div>
         <div class="col-md-9">
@@ -18,6 +18,6 @@
     </div>
     <br>
     <div class="row">
-        <span style="white-space: pre-wrap;">{{description}}</span>
+        <span class="white-space">{{description}}</span>
     </div>
 </div>

@@ -4,8 +4,19 @@ var exphbs = require('express-handlebars');
 var multer = require('multer')
 var mkdirp = require('mkdirp');
 var uuid = require('uuid-v4');
+var redis = require('redis');
 var sqlite3 = require('sqlite3');
-var db = new sqlite3.Database('./db/movies.sqlite3', sqlite3.OPEN_READWRITE);
+var yalmConfig = require('node-yaml-config');
+var redisConfig = yalmConfig.load('./redis.yml');
+console.log(redisConfig);
+var sqliteConfig = yalmConfig.load('./database.yml');
+var redisClient = redis.createClient(redisConfig.port, redisConfig.host);
+
+redisClient.on('connect', function() {
+    console.log('Redis connected');
+});
+
+var db = new sqlite3.Database(sqliteConfig.path, sqlite3.OPEN_READWRITE);
 var validUUID = true;
 
 var newFilePath = "";
@@ -161,8 +172,6 @@ app.get('/movies/details/:id', function(req, res) {
             row.keywords = row.keywords.split(',');
             row.title = 'Movie App';
             row.layoutTitle = 'My Movies';
-            // row.description = row.description.replace(/(\r\n|\n|\r)/gm, '');
-            console.log(row);
             res.render('detail', row);
         });
     });
