@@ -1,8 +1,8 @@
 <div class="col-md-12">
     <div class="row">
         <div class="col-md-3">
-            {{#if imageCompressed}}
-                <img src="{{image}}">
+            {{#if compressedThumbnail}}
+                <img src="{{compressedThumbnail}}" class="uncompressedDetail">
             {{else}}
                 <img src="{{image}}" class="uncompressedDetail">
             {{/if}}
