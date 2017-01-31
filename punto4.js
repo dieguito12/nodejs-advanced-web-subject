@@ -8,7 +8,6 @@ var redis = require('redis');
 var sqlite3 = require('sqlite3');
 var yalmConfig = require('node-yaml-config');
 var redisConfig = yalmConfig.load('./redis.yml');
-console.log(redisConfig);
 var sqliteConfig = yalmConfig.load('./database.yml');
 var redisClient = redis.createClient(redisConfig.port, redisConfig.host);
 
@@ -22,6 +21,8 @@ var validUUID = true;
 var newFilePath = "";
 
 app.use(express.static('public'));
+app.use(express.static('generated'));
+
 
 var storageImage = multer.diskStorage({
     destination: function(req, file, cb) {
@@ -107,9 +108,10 @@ app.post('/movies/create', upload.single('image'), function(req, res, next) {
         while (!verifyUUID(newUUID)) {
             newUUID = uuid();
         }
-        var statement = db.prepare("INSERT INTO movies values (?,?,?,?,?)");
+        var statement = db.prepare("INSERT INTO movies (id, name, description, keywords, image) values (?,?,?,?,?)");
         statement.run(newUUID, req.body.name, req.body.description, req.body.keywords, newFilePath);
         statement.finalize();
+        redisClient.set("diego:uploadedImage", newFilePath);
     });
 
     res.redirect('/movies');
