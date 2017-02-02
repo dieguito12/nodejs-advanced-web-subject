@@ -1,0 +1,22 @@
+<div style="margin-bottom: 15px" class="row">
+    <a href="/movies/details/{{id}}">
+        <div class="col-md-3 centered">
+            {{#if largeThumbnail}}
+                <img src="{{largeThumbnail}}">
+            {{else}}
+                <img src="{{image}}" class="uncompressedList">
+            {{/if}}                
+        </div>
+    </a>
+    <div class="col-md-9">
+        <div class="row">
+            <a href="/movies/details/{{id}}">
+                <h3>{{name}}</h3>
+            </a>
+        </div>
+        <div class="row">
+            {{> keywords}}
+        </div>
+    </div>
+</div>
+<hr style="height:1px;border:none;color:#333;background-color:#333;" />

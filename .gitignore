@@ -1,1 +1,7 @@
 /node_modules
+.vscode
+/uploads/*
+/public
+/db
+tinify.yml
+/generated

@@ -1,0 +1,23 @@
+<div class="col-md-12">
+    <div class="row">
+        <div class="col-md-3">
+            {{#if compressedThumbnail}}
+                <img src="{{compressedThumbnail}}" class="uncompressedDetail">
+            {{else}}
+                <img src="{{image}}" class="uncompressedDetail">
+            {{/if}}
+        </div>
+        <div class="col-md-9">
+            <div class="row">
+                <h3>{{name}}</h3>
+            </div>
+            <div class="row">
+                {{> keywords}}
+            </div>
+        </div>
+    </div>
+    <br>
+    <div class="row">
+        <span class="white-space">{{description}}</span>
+    </div>
+</div>
