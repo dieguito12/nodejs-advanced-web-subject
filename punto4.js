@@ -5,6 +5,7 @@ var multer = require('multer')
 var mkdirp = require('mkdirp');
 var uuid = require('uuid-v4');
 var redis = require('redis');
+var cors = require('cors');
 var sqlite3 = require('sqlite3');
 var yalmConfig = require('node-yaml-config');
 var redisConfig = yalmConfig.load('./redis.yml');
@@ -22,7 +23,27 @@ var newFilePath = "";
 
 app.use(express.static('public'));
 app.use(express.static('generated'));
+app.use(cors());
+app.disable('etag');
 
+app.use(function(req, res, next) {
+    var postValues = {};
+    req.setEncoding('utf8');
+    req.on('data', function(data) {
+        if (req.headers['content-type'] == 'application/json') {
+            res.body = data;
+        } else if (req.headers['content-type'] == 'application/x-www-form-urlencoded') {
+            var postData = data.split("&");
+            for (var i = 0; i < postData.length; i++) {
+                var postEntry = postData[i].split('=');
+                req[postEntry[0]] = postEntry[1];
+            }
+        }
+    });
+    req.on('end', function() {
+        next();
+    });
+});
 
 var storageImage = multer.diskStorage({
     destination: function(req, file, cb) {
@@ -117,26 +138,6 @@ app.post('/movies/create', upload.single('image'), function(req, res, next) {
     res.redirect('/movies');
 });
 
-
-app.use(function(req, res, next) {
-    var postValues = {};
-    req.setEncoding('utf8');
-    req.on('data', function(data) {
-        if (req.headers['content-type'] == 'application/json') {
-            res.body = data;
-        } else if (req.headers['content-type'] == 'application/x-www-form-urlencoded') {
-            var postData = data.split("&");
-            for (var i = 0; i < postData.length; i++) {
-                var postEntry = postData[i].split('=');
-                req[postEntry[0]] = postEntry[1];
-            }
-        }
-    });
-    req.on('end', function() {
-        next();
-    });
-});
-
 app.engine('handlebars', handlebars.engine);
 
 app.set('view engine', 'handlebars');
@@ -157,14 +158,34 @@ app.get('/movies', function(req, res) {
 });
 
 app.get('/movies/json', function(req, res) {
+    res.status(200);
+    res.set('Content-Type', 'application/json');
     db.serialize(function() {
         db.all("SELECT * FROM movies", function(err, row) {
             row.forEach(function(element) {
                 element.keywords = element.keywords.split(',');
+                element.image = "http://" + req.headers.host + element.image;
+                if (!element.compressedThumbnail) {
+                    element.compressedThumbnail = "";
+                }
+                if (!element.smallThumbnail) {
+                    element.smallThumbnail = "";
+                }
+                if (!element.mediumThumbnail) {
+                    element.mediumThumbnail = "";
+                }
+                if (!element.largeThumbnail) {
+                    element.largeThumbnail = "";
+                }
+                element.compressedThumbnail = "http://" + req.headers.host + element.compressedThumbnail;
+                element.smallThumbnail = "http://" + req.headers.host + element.smallThumbnail;
+                element.mediumThumbnail = "http://" + req.headers.host + element.mediumThumbnail;
+                element.largeThumbnail = "http://" + req.headers.host + element.largeThumbnail;
             }, this);
             res.send(row);
         });
-    })
+    });
+
 });
 
 app.get('/movies/details/:id', function(req, res) {
@@ -195,14 +216,35 @@ app.get('/movies/list', function(req, res) {
 });
 
 app.get('/movies/list/json', function(req, res) {
+    res.status(200);
+    res.set('Content-Type', 'application/json');
     db.serialize(function() {
         db.all("SELECT * FROM movies", function(err, row) {
             row.forEach(function(element) {
                 element.keywords = element.keywords.split(',');
+                element.image = req.headers.host + element.image;
+                if (!element.compressedThumbnail) {
+                    element.compressedThumbnail = "";
+                }
+                if (!element.smallThumbnail) {
+                    element.smallThumbnail = "";
+                }
+                if (!element.mediumThumbnail) {
+                    element.mediumThumbnail = "";
+                }
+                if (!element.largeThumbnail) {
+                    element.largeThumbnail = "";
+                }
+                element.compressedThumbnail = req.headers.host + element.compressedThumbnail;
+                element.smallThumbnail = req.headers.host + element.smallThumbnail;
+                element.mediumThumbnail = req.headers.host + element.mediumThumbnail;
+                element.largeThumbnail = req.headers.host + element.largeThumbnail;
             }, this);
             res.send(row);
+
         });
-    })
+    });
+
 });
 
 app.get('/movies/create', function(req, res) {
