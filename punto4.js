@@ -6,17 +6,17 @@ var mkdirp = require('mkdirp');
 var uuid = require('uuid-v4');
 var redis = require('redis');
 var cors = require('cors');
-var sqlite3 = require('sqlite3');
 var yalmConfig = require('node-yaml-config');
 var redisConfig = yalmConfig.load('./redis.yml');
-var sqliteConfig = yalmConfig.load('./database.yml');
 var redisClient = redis.createClient(redisConfig.port, redisConfig.host);
+var mongo = require('mongodb');
+var mongoClient = mongo.MongoClient;
+var mongoConfig = yalmConfig.load('./mongo-database.yml');
 
 redisClient.on('connect', function() {
     console.log('Redis connected');
 });
 
-var db = new sqlite3.Database(sqliteConfig.path, sqlite3.OPEN_READWRITE);
 var validUUID = true;
 
 var newFilePath = "";
@@ -25,25 +25,6 @@ app.use(express.static('public'));
 app.use(express.static('generated'));
 app.use(cors());
 app.disable('etag');
-
-app.use(function(req, res, next) {
-    var postValues = {};
-    req.setEncoding('utf8');
-    req.on('data', function(data) {
-        if (req.headers['content-type'] == 'application/json') {
-            res.body = data;
-        } else if (req.headers['content-type'] == 'application/x-www-form-urlencoded') {
-            var postData = data.split("&");
-            for (var i = 0; i < postData.length; i++) {
-                var postEntry = postData[i].split('=');
-                req[postEntry[0]] = postEntry[1];
-            }
-        }
-    });
-    req.on('end', function() {
-        next();
-    });
-});
 
 var storageImage = multer.diskStorage({
     destination: function(req, file, cb) {
@@ -63,16 +44,6 @@ var upload = multer({
     dest: '/uploads/',
     storage: storageImage,
 });
-
-function verifyUUID(newUUID) {
-    db.get("SELECT * FROM movies where id = (?)", newUUID, function(err, row) {
-        if (row > 0) {
-            validUUID = false;
-        }
-    });
-    return validUUID;
-}
-
 
 var allowedMethod = ['GET', 'POST', 'PUT'];
 
@@ -125,17 +96,48 @@ app.post('/movies/create', upload.single('image'), function(req, res, next) {
         res.render('create', invalidJsonResponse);
         return;
     }
-    db.serialize(function() {
-        while (!verifyUUID(newUUID)) {
-            newUUID = uuid();
-        }
-        var statement = db.prepare("INSERT INTO movies (id, name, description, keywords, image) values (?,?,?,?,?)");
-        statement.run(newUUID, req.body.name, req.body.description, req.body.keywords, newFilePath);
-        statement.finalize();
-        redisClient.set("diego:uploadedImage", newFilePath);
-    });
 
+    var movie = {
+        name: req.body.name,
+        description: req.body.description,
+        keywords: req.body.keywords,
+        image: newFilePath
+    };
+
+    mongoClient.connect(mongoConfig.conectionString, function(err, db) {
+        if (err) {
+            return console.error(err);
+        }
+        var collectionMovies = db.collection('movies');
+        collectionMovies.insert(movie, function(err, result) {
+            if (err) {
+                console.error(err);
+            } else {
+                redisClient.set("diego:uploadedImage", newFilePath);
+            }
+            db.close();
+        });
+    });
     res.redirect('/movies');
+});
+
+app.use(function(req, res, next) {
+    var postValues = {};
+    req.setEncoding('utf8');
+    req.on('data', function(data) {
+        if (req.headers['content-type'] == 'application/json') {
+            res.body = data;
+        } else if (req.headers['content-type'] == 'application/x-www-form-urlencoded') {
+            var postData = data.split("&");
+            for (var i = 0; i < postData.length; i++) {
+                var postEntry = postData[i].split('=');
+                req[postEntry[0]] = postEntry[1];
+            }
+        }
+    });
+    req.on('end', function() {
+        next();
+    });
 });
 
 app.engine('handlebars', handlebars.engine);
@@ -143,26 +145,36 @@ app.engine('handlebars', handlebars.engine);
 app.set('view engine', 'handlebars');
 
 app.get('/movies', function(req, res) {
-    db.serialize(function() {
-        db.all("SELECT * FROM movies", function(err, row) {
-            row.forEach(function(element) {
+    mongoClient.connect(mongoConfig.conectionString, function(err, db) {
+        if (err) {
+            return console.error(err);
+        }
+        var collectionMovies = db.collection('movies');
+        collectionMovies.find().toArray(function(err, result) {
+            result.forEach(function(element) {
                 element.keywords = element.keywords.split(',');
             }, this);
             res.render('movies', {
                 title: "Movie App",
                 layoutTitle: "My Movies",
-                movies: row
-            });
+                movies: result
+            })
+            db.close();
         });
-    })
+    });
+
 });
 
 app.get('/movies/json', function(req, res) {
     res.status(200);
     res.set('Content-Type', 'application/json');
-    db.serialize(function() {
-        db.all("SELECT * FROM movies", function(err, row) {
-            row.forEach(function(element) {
+    mongoClient.connect(mongoConfig.conectionString, function(err, db) {
+        if (err) {
+            return console.error(err);
+        }
+        var collectionMovies = db.collection('movies');
+        collectionMovies.find().toArray(function(err, result) {
+            result.forEach(function(element) {
                 element.keywords = element.keywords.split(',');
                 element.image = "http://" + req.headers.host + element.image;
                 if (!element.compressedThumbnail) {
@@ -182,47 +194,63 @@ app.get('/movies/json', function(req, res) {
                 element.mediumThumbnail = "http://" + req.headers.host + element.mediumThumbnail;
                 element.largeThumbnail = "http://" + req.headers.host + element.largeThumbnail;
             }, this);
-            res.send(row);
-        });
+            res.send(result);
+        })
+        db.close();
     });
 
 });
 
 app.get('/movies/details/:id', function(req, res) {
-    db.serialize(function() {
-        db.get("SELECT * FROM movies where id = (?)", req.param("id"), function(err, row) {
-            row.imageCompressed = false;
-            row.keywords = row.keywords.split(',');
-            row.title = 'Movie App';
-            row.layoutTitle = 'My Movies';
-            res.render('detail', row);
+    mongoClient.connect(mongoConfig.conectionString, function(err, db) {
+        if (err) {
+            return console.error(err);
+        }
+        var collectionMovies = db.collection('movies');
+        var objectId = new mongo.ObjectID(req.param("id"));
+        collectionMovies.findOne({ _id: objectId }, function(err, result) {
+            result.imageCompressed = false;
+            result.keywords = result.keywords.split(',');
+            result.title = 'Movie App';
+            result.layoutTitle = 'My Movies';
+            res.render('detail', result);
+            db.close();
         });
     });
 });
 
 app.get('/movies/list', function(req, res) {
-    db.serialize(function() {
-        db.all("SELECT * FROM movies", function(err, row) {
-            row.forEach(function(element) {
+    mongoClient.connect(mongoConfig.conectionString, function(err, db) {
+        if (err) {
+            return console.error(err);
+        }
+        var collectionMovies = db.collection('movies');
+        collectionMovies.find().toArray(function(err, result) {
+            result.forEach(function(element) {
                 element.keywords = element.keywords.split(',');
             }, this);
             res.render('movies', {
                 title: "Movie App",
                 layoutTitle: "My Movies",
-                movies: row
-            });
+                movies: result
+            })
+            db.close();
         });
-    })
+    });
 });
 
 app.get('/movies/list/json', function(req, res) {
     res.status(200);
     res.set('Content-Type', 'application/json');
-    db.serialize(function() {
-        db.all("SELECT * FROM movies", function(err, row) {
-            row.forEach(function(element) {
+    mongoClient.connect(mongoConfig.conectionString, function(err, db) {
+        if (err) {
+            return console.error(err);
+        }
+        var collectionMovies = db.collection('movies');
+        collectionMovies.find().toArray(function(err, result) {
+            result.forEach(function(element) {
                 element.keywords = element.keywords.split(',');
-                element.image = req.headers.host + element.image;
+                element.image = "http://" + req.headers.host + element.image;
                 if (!element.compressedThumbnail) {
                     element.compressedThumbnail = "";
                 }
@@ -235,13 +263,13 @@ app.get('/movies/list/json', function(req, res) {
                 if (!element.largeThumbnail) {
                     element.largeThumbnail = "";
                 }
-                element.compressedThumbnail = req.headers.host + element.compressedThumbnail;
-                element.smallThumbnail = req.headers.host + element.smallThumbnail;
-                element.mediumThumbnail = req.headers.host + element.mediumThumbnail;
-                element.largeThumbnail = req.headers.host + element.largeThumbnail;
+                element.compressedThumbnail = "http://" + req.headers.host + element.compressedThumbnail;
+                element.smallThumbnail = "http://" + req.headers.host + element.smallThumbnail;
+                element.mediumThumbnail = "http://" + req.headers.host + element.mediumThumbnail;
+                element.largeThumbnail = "http://" + req.headers.host + element.largeThumbnail;
             }, this);
-            res.send(row);
-
+            res.send(result);
+            db.close();
         });
     });
 
