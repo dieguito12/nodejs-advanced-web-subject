@@ -1,0 +1,2 @@
+default:
+    conectionString: 'mongodb://192.168.10.10:27017/movies_v2'
