@@ -40,9 +40,27 @@ var storageImage = multer.diskStorage({
     }
 });
 
+var simpleStorageImage = multer.diskStorage({
+    destination: function(req, file, cb) {
+        var newDestination = '/public/img/';
+        mkdirp(__dirname + newDestination, function(err) {
+            cb(null, __dirname + newDestination);
+        });
+    },
+    filename: function(req, file, cb) {
+        newFilePath = "/img/" + file.originalname;
+        cb(null, file.originalname);
+    }
+});
+
 var upload = multer({
     dest: '/uploads/',
     storage: storageImage,
+});
+
+var simpleUpload = multer({
+    dest: '/uploads/',
+    storage: simpleStorageImage,
 });
 
 var allowedMethod = ['GET', 'POST', 'PUT'];
@@ -119,6 +137,16 @@ app.post('/movies/create', upload.single('image'), function(req, res, next) {
         });
     });
     res.redirect('/movies');
+});
+
+app.post('/image', simpleUpload.single('image'), function(req, res, next) {
+    res.set('Content-Type', 'application/json');
+    if (!req.file) {
+        res.status(400);
+        res.send("{\"statusCode\":\"400\"}");
+    }
+    res.status(200);
+    res.send("{\"statusCode\":\"200\"}");
 });
 
 app.use(function(req, res, next) {
