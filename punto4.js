@@ -72,6 +72,11 @@ var handlebars = exphbs.create({
     ]
 });
 
+app.get("/image", function(req, res, next) {
+    res.status(404);
+    res.send("{\"statusCode\":\"404\"}");
+})
+
 app.post('/movies/create', upload.single('image'), function(req, res, next) {
     var newUUID = uuid();
     var invalidJsonResponse = {
@@ -140,13 +145,19 @@ app.post('/movies/create', upload.single('image'), function(req, res, next) {
 });
 
 app.post('/image', simpleUpload.single('image'), function(req, res, next) {
-    res.set('Content-Type', 'application/json');
+    var code;
+    if (req.headers['content-type'].includes("multipart")) {
+        code = 200;
+    } else {
+        code = 400;
+    }
     if (!req.file) {
         res.status(400);
         res.send("{\"statusCode\":\"400\"}");
+        return;
     }
-    res.status(200);
-    res.send("{\"statusCode\":\"200\"}");
+    res.status(code);
+    res.send("{\"statusCode\":\"" + code + "\"}");
 });
 
 app.use(function(req, res, next) {
@@ -245,6 +256,13 @@ app.get('/movies/details/:id', function(req, res) {
             db.close();
         });
     });
+});
+
+app.get('/movies/details*', function(req, res) {
+    if (!req.param("id")) {
+        res.status(404);
+        res.send("{\"statusCode\":\"404\"}");
+    }
 });
 
 app.get('/movies/list', function(req, res) {
