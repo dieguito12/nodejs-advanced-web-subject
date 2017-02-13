@@ -164,7 +164,7 @@ app.use(function(req, res, next) {
     var postValues = {};
     req.setEncoding('utf8');
     req.on('data', function(data) {
-        if (req.headers['content-type'] == 'application/json') {
+        if (req.headers['content-type'].includes('json')) {
             res.body = data;
         } else if (req.headers['content-type'] == 'application/x-www-form-urlencoded') {
             var postData = data.split("&");
@@ -184,6 +184,7 @@ app.engine('handlebars', handlebars.engine);
 app.set('view engine', 'handlebars');
 
 app.get('/movies', function(req, res) {
+    res.set('Content-Type', 'text/html');
     mongoClient.connect(mongoConfig.conectionString, function(err, db) {
         if (err) {
             return console.error(err);
@@ -258,7 +259,7 @@ app.get('/movies/details/:id', function(req, res) {
     });
 });
 
-app.get('/movies/details*', function(req, res) {
+app.get('/movies/id*', function(req, res) {
     if (!req.param("id")) {
         res.status(404);
         res.send("{\"statusCode\":\"404\"}");
@@ -392,12 +393,8 @@ app.all('*', function(req, res) {
         return req.headers[key].toString()
     });
     var headers = JSON.stringify(arr);
-    var jsonResponse = "{\"method\":" + "\"" + method + "\"" +
-        ",\"path\":" + "\"" + path + "\"" +
-        ",\"host\":" + "\"" + host + "\"" +
-        ",\"port\":" + "\"" + port + "\"" +
-        ",\"header\":" + headers + "}";
-    res.send(jsonResponse);
+    var jsonResponse = { method: method, path: path, host: host, port: port, header: [headers] };
+    res.json(jsonResponse);
 });
 
 app.listen(8084, function() {
